@@ -168,32 +168,27 @@ class CSP:
         assignments and inferences that took place in previous
         iterations of the loop.
         """
-        if filter(lambda x : len(x) == 1, assignment.values):
-            return assignment
-        key = self.select_unassigned_variable(assignment)
-        var = assignment[key]
+        ass2 = copy.deepcopy(assignment)
+        if all(map(lambda x : len(x) == 1, ass2.values())):
+            print(ass2.values())
+            print("Very happy happy happy")
+            print("Jille diesel")
+            return ass2
+        key = self.select_unassigned_variable(ass2)
+        print(key)
+        var = ass2[key]
         var.sort()
         for value in var:
-            if value is consistent:
-        pass
-
-    def select_unassigned_variable(self, assignment: dict[str,list[str]]) -> str:
-        """The function 'Select-Unassigned-Variable' from the pseudocode
-        in the textbook. Should return the name of one of the variables
-        in 'assignment' that have not yet been decided, i.e. whose list
-        of legal values has a length greater than one.
-        Parameters
-        ----------
-        assignment : dict[list]
-            csp.domains
-
-        Returns
-        -------
-        str
-            A key to an unassigned variable
-        """
-        return filter(
-            lambda key: len(assignment[key]) > 1, assignment.keys())[0]
+            ass2[key] = []
+            ass2[key].append(value)
+            inf = self.inference(ass2, self.get_all_neighboring_arcs(key))
+            if inf:
+                res = self.backtrack(ass2)
+                if res:
+                    print("happy happy happy")
+                    return res
+                
+        return False
 
     def inference(
             self, assignment: dict[list[str]],
@@ -216,14 +211,32 @@ class CSP:
             assignment
         """
         while len(queue):
-            x_i, x_j = queue.pop(0)
+            x_j, x_i = queue.pop(0)
             assignment, revised = self.revise(assignment, x_i, x_j)
             if revised:
-                if not len(self.domains[x_i]):
+                if not len(assignment[x_i]):
                     return False
-                for x_k in set(self.get_all_neighboring_arcs(x_i)).difference(set(x_j)):
+                # for x_k in neighboring arcs with no x_j in
+                for x_k in list(filter(lambda x: x_j not in x, self.get_all_neighboring_arcs(x_i))):
                     queue.append(x_k)
         return assignment
+    
+    def select_unassigned_variable(self, assignment: dict[str,list[str]]) -> str:
+        """The function 'Select-Unassigned-Variable' from the pseudocode
+        in the textbook. Should return the name of one of the variables
+        in 'assignment' that have not yet been decided, i.e. whose list
+        of legal values has a length greater than one.
+        Parameters
+        ----------
+        assignment : dict[list]
+            csp.domains
+
+        Returns
+        -------
+        str
+            A key to an unassigned variable
+        """
+        return list(filter(lambda key: len(assignment[key]) > 1, assignment.keys()))[0]
 
     def revise(self, assignment: dict[list[str]], x_i, x_j):
         """The function 'Revise' from the pseudocode in the textbook.
@@ -318,13 +331,14 @@ def print_sudoku_solution(solution):
             print('------+-------+------')
 
 
-csp = create_sudoku_csp("easy.txt")
+csp = create_sudoku_csp("veryhard.txt")
 # print(csp.constraints['0-8']['0-0'])
 
 # print(csp.constraints)
 # print(csp.domains)
 assignment = copy.deepcopy(csp.domains)
+print_sudoku_solution(csp.backtracking_search())
+print()
 
-
-print(print_sudoku_solution(csp.inference(assignment, csp.get_all_arcs())))
+# print(print_sudoku_solution(csp.inference(assignment, csp.get_all_arcs())))
       
