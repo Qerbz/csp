@@ -5,6 +5,10 @@
 import copy
 from itertools import product as prod
 
+global backtrack_call_count
+backtrack_call_count = 0
+global failure_count
+failure_count = 0
 
 class CSP:
     def __init__(self):
@@ -168,14 +172,12 @@ class CSP:
         assignments and inferences that took place in previous
         iterations of the loop.
         """
+        global backtrack_call_count
+        backtrack_call_count += 1
         ass2 = copy.deepcopy(assignment)
         if all(map(lambda x : len(x) == 1, ass2.values())):
-            print(ass2.values())
-            print("Very happy happy happy")
-            print("Jille diesel")
             return ass2
         key = self.select_unassigned_variable(ass2)
-        print(key)
         var = ass2[key]
         var.sort()
         for value in var:
@@ -185,9 +187,9 @@ class CSP:
             if inf:
                 res = self.backtrack(ass2)
                 if res:
-                    print("happy happy happy")
                     return res
-                
+        global failure_count
+        failure_count += 1
         return False
 
     def inference(
@@ -323,7 +325,11 @@ def print_sudoku_solution(solution):
     """
     for row in range(9):
         for col in range(9):
-            print(solution['%d-%d' % (row, col)][0], end=" "),
+            if(len(solution['%d-%d' % (row, col)]) > 1):
+                print(' ', end=" ")
+
+            else:
+                print(solution['%d-%d' % (row, col)][0], end=" "),
             if col == 2 or col == 5:
                 print('|', end=" "),
         print("")
@@ -332,13 +338,11 @@ def print_sudoku_solution(solution):
 
 
 csp = create_sudoku_csp("veryhard.txt")
-# print(csp.constraints['0-8']['0-0'])
-
-# print(csp.constraints)
-# print(csp.domains)
 assignment = copy.deepcopy(csp.domains)
-print_sudoku_solution(csp.backtracking_search())
-print()
+print_sudoku_solution(csp.domains)
 
-# print(print_sudoku_solution(csp.inference(assignment, csp.get_all_arcs())))
+print()
+print_sudoku_solution(csp.backtracking_search())
       
+print(backtrack_call_count)
+print(failure_count)
