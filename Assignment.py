@@ -138,7 +138,7 @@ class CSP:
         # Make a so-called "deep copy" of the dictionary containing the
         # domains of the CSP variables. The deep copy is required to
         # ensure that any changes made to 'assignment' does not have any
-        # side effects elsewhere.
+        # side effects elsewhere, so that we can have a clean run for every recursion.
         assignment = copy.deepcopy(self.domains)
 
         # Run AC-3 on all constraints in the CSP, to weed out all of the
@@ -172,22 +172,32 @@ class CSP:
         assignments and inferences that took place in previous
         iterations of the loop.
         """
+        # Increment counter
         global backtrack_call_count
         backtrack_call_count += 1
+        # We need a new copy of the domain values for this round of recursion.
         ass2 = copy.deepcopy(assignment)
+        # Return the domains if they are all single values.
+        # If this is satisfied, the solution has been found.
         if all(map(lambda x : len(x) == 1, ass2.values())):
             return ass2
         key = self.select_unassigned_variable(ass2)
         var = ass2[key]
         var.sort()
         for value in var:
+            # Clear out the domain values for our selected variable
             ass2[key] = []
+            # Check whether value is a valid domain value for the variable
             ass2[key].append(value)
             inf = self.inference(ass2, self.get_all_neighboring_arcs(key))
+            # If value was valid, keep going with the domain of this variable set to only value
             if inf:
                 res = self.backtrack(ass2)
+                # Res will be False if the backtracking was unsuccesful.
+                # If solution found, keep returning the solution:
                 if res:
                     return res
+        # Failure. This will take us back to the previous backtrack, where we can attempt with a new domain value
         global failure_count
         failure_count += 1
         return False
@@ -212,13 +222,16 @@ class CSP:
         dict[list[str]]
             assignment
         """
+        # Go through all arcs in queue, keep checking until the domains are valid,
+        # and are not changed by the revise function
         while len(queue):
             x_j, x_i = queue.pop(0)
             assignment, revised = self.revise(assignment, x_i, x_j)
             if revised:
+                # If no domain values for x_i satisfy the constraints, fail:
                 if not len(assignment[x_i]):
                     return False
-                # for x_k in neighboring arcs with no x_j in
+                # Add all other neighbors to the queue of arcs to visit
                 for x_k in list(filter(lambda x: x_j not in x, self.get_all_neighboring_arcs(x_i))):
                     queue.append(x_k)
         return assignment
@@ -238,6 +251,7 @@ class CSP:
         str
             A key to an unassigned variable
         """
+        # Find the first (or any) variable with more than 1 value in its domain, return its key
         return list(filter(lambda key: len(assignment[key]) > 1, assignment.keys()))[0]
 
     def revise(self, assignment: dict[list[str]], x_i, x_j):
@@ -251,6 +265,7 @@ class CSP:
         """
         revised = False
         for i, x in enumerate(assignment[x_i]):
+            # If the values (x, y) from the domains of x_i and x_j satisfy the constraints, remove x from the domain of x_i
             if not len(list(filter(lambda y: (x, y) in self.constraints[x_i][x_j], assignment[x_j]))):
                 assignment[x_i].pop(i)
                 revised = True
